@@ -72,4 +72,5 @@ jobs:
       with:
         file: ${{ matrix.dist }}/lw-${{ env.tag_name }}-${{ matrix.platform }}.exe
         draft: false
-        tags: false  
+        tags: false
+        tag_name: ${{ env.tag_name }}
