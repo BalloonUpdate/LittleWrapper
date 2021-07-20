@@ -1,0 +1,73 @@
+name: MSBuild
+
+on:
+  push: 
+    tags: 
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'The special version name'
+        required: false
+        default: ''
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+jobs:
+  build:
+    runs-on: windows-2019
+    
+    strategy:
+      matrix:
+        include:
+          - platform: x86
+            dist: Release
+          - platform: x64
+            dist: x64\Release
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Check Out Tag-Name
+      id: checkout-tagname
+      shell: "python3 {0}"
+      run: |
+        import os
+        import re
+        sp_ver = '${{ github.event.inputs.name }}'
+        ref = os.getenv('GITHUB_REF', '')
+        run_id = os.getenv('GITHUB_RUN_ID', '')
+        match = re.search(r'refs\/tags\/(.*)', ref)
+        tag_name = match[1] if match is not None else (sp_ver if sp_ver != '' else run_id)
+        print('::set-output name=tag_name::'+tag_name)
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: |
+        msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{ matrix.platform }} ${{env.SOLUTION_FILE_PATH}}
+        dir
+        dir ${{ matrix.dist }}
+        
+    - name: After Upload
+      env: 
+        tag_name: ${{ steps.checkout-tagname.outputs.tag_name }}
+      run: |
+        cd ${{ matrix.dist }}
+        rename lw.exe lw-${{ env.tag_name }}.exe
+      
+    - name: Upload To Github Release
+      uses: xresloader/upload-to-github-release@v1.3.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        tag_name: ${{ steps.checkout-tagname.outputs.tag_name }}
+      with:
+        file: ${{ matrix.dist }}/lw-${{ env.tag_name }}.exe
+        draft: false
+        tags: false  
