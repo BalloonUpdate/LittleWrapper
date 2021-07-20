@@ -27,7 +27,7 @@ jobs:
             dist: Release
           - configuration: Release
             platform: x64
-            dist: x64\Release
+            dist: x64/Release
 
     steps:
     - uses: actions/checkout@v2
