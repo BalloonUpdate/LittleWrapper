@@ -62,7 +62,7 @@ jobs:
         tag_name: ${{ steps.checkout-tagname.outputs.tag_name }}
       run: |
         cd ${{ matrix.dist }}
-        rename lw.exe lw-${{ env.tag_name }}.exe
+        ren lw.exe lw-${{ env.tag_name }}.exe
       
     - name: Upload To Github Release
       uses: xresloader/upload-to-github-release@v1.3.0
